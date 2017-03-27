@@ -1,5 +1,7 @@
 package org.agr.search
 
+import java.util.concurrent.TimeUnit
+
 class RenderImageController {
 
     final String IMAGE_DIRECTORY = "/opt/agr/jbrowse/overviews"
@@ -33,29 +35,37 @@ class RenderImageController {
         // 2. generate image to the directory
 //        phantomjs rasterize.js "http://localhost/jbrowse/overview.html?data=data%2FDanio%20rerio&loc=12:47426569..47433060&tracks=All%20Genes&highlight=&lookupSymbol=chrm3b" jbrowse.png '4800px*2600px' 4 5000
     // convert jbrowse.png -trim +repage jbrowse_trim.png && open jbrowse_trim.png
-        File tempFile = File.createTempFile("jbrowse-snapshot",".png")
-
+//        File tempFile = File.createTempFile("jbrowse-snapshot",".png")
+        File tempFile = new File("input.png")
         println "present working directory: " + new File(".").absolutePath
+//        String scriptsDirectory = request.
+//        println "scripts directory [${scriptsDirectory}]"
 
         println "rendering feature to ${tempFile.absolutePath}"
         def command = """phantomjs rasterize.js ${requestUrl} ${tempFile.absolutePath} '4800px*2600px' 4 5000"""// Create the String
         println "Screenshot command: " +command
         def proc = command.execute()                 // Call *execute* on the string
-        proc.waitFor()
-        println "StdOut: " + proc.outputStream
-        println "Error: " + proc.errorStream
-        println "RENDERED feature to ${tempFile.absolutePath}"
+        def sout = new StringBuilder(), serr = new StringBuilder()
+        proc.consumeProcessOutput(sout, serr)
+        proc.waitFor(8000,TimeUnit.MILLISECONDS)
+        println "out> $sout err> $serr"
+//        println "StdOut: " + proc.outputStream
+//        println "Error: " + proc.errorStream
+        println "RENDERED feature to ${tempFile.absolutePath} and exists ${tempFile.exists()}"
 
-        println "converting feature from ${tempFile.absolutePath} to ${imageFile}"
-        def command2 = """convert ${tempFile} +repage ${imageFile}"""// Create the String
+        println "converting feature from ${tempFile.absolutePath} to ${imageFile.absolutePath}"
+        def command2 = """convert ${tempFile.absolutePath} -trim +repage ${imageFile.absolutePath}"""// Create the String
         println "Clip command: " +command2
         def proc2 = command2.execute()                 // Call *execute* on the string
+        def sout2 = new StringBuilder(), serr2 = new StringBuilder()
+        proc2.consumeProcessOutput(sout2, serr2)
         proc2.waitFor()
-        println "CONVERTED feature from ${tempFile.absolutePath} to ${imageFile}"
+        println "out> $sout2 err> $serr2"
+        println "CONVERTED feature from ${tempFile.absolutePath} to ${imageFile.absolutePath}"
 
         if(imageFile.exists()){
-            println "returning image feature from ${tempFile.absolutePath} to ${imageFile}"
-            render file: imageFile.inputStream, contentType: 'image/png'
+            println "returning image feature from ${tempFile.absolutePath} to ${imageFile.absolutePath}"
+            render file: imageFile.bytes, contentType: 'image/png'
         }
         else{
             throw new RuntimeException("Failed to create image")

@@ -1,4 +1,4 @@
-"use strict";
+// "use strict";
 var page = require('webpage').create(),
     system = require('system'),
     address, output, size, pageWidth, pageHeight;
@@ -11,6 +11,9 @@ if (system.args.length < 3 || system.args.length > 6) {
     phantom.exit(1);
 } else {
     address = system.args[1];
+    while(address.indexOf('&')>0){
+        address = address.replace('&','%26');
+    }
     output = system.args[2];
     page.viewportSize = { width: 600, height: 600 };
     if (system.args.length > 3 && system.args[2].substr(-4) === ".pdf") {
@@ -36,6 +39,8 @@ if (system.args.length < 3 || system.args.length > 6) {
         page.zoomFactor = system.args[4];
     }
     page.open(address, function (status) {
+		console.log('opening address: '+address) ; 
+		console.log('status: '+ status) ; 
         if (status !== 'success') {
             console.log('Unable to load the address!');
             phantom.exit(1);
